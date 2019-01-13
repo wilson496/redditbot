@@ -1,0 +1,4 @@
+# requirements file
+requests
+pytest
+virtualenvwrapper
