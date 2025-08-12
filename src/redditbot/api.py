@@ -102,7 +102,7 @@ def validate_settings() -> Dict[str, Any]:
             },
             "client_id": {
                 "configured": bool(settings.reddit.client_id and settings.reddit.client_id.strip()),
-                "value": (settings.reddit.client_id[:8] + "..." 
+                "value": (settings.reddit.client_id[:8] + "..."
                          if settings.reddit.client_id else None),
                 "valid": bool(settings.reddit.client_id and settings.reddit.client_id.strip())
             },
@@ -111,9 +111,11 @@ def validate_settings() -> Dict[str, Any]:
                 "valid": bool(settings.reddit.client_secret)
             },
             "user_agent": {
-                "configured": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip()),
-                "value": (settings.reddit.user_agent[:50] + "..." 
-                         if len(settings.reddit.user_agent) > 50 
+                "configured": bool(
+                    settings.reddit.user_agent and settings.reddit.user_agent.strip()
+                ),
+                "value": (settings.reddit.user_agent[:50] + "..."
+                         if len(settings.reddit.user_agent) > 50
                          else settings.reddit.user_agent),
                 "valid": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip())
             },
@@ -135,13 +137,13 @@ def validate_settings() -> Dict[str, Any]:
 
         return {
             "status": "valid" if all_valid else "invalid",
-            "message": ("Settings are properly loaded and accessible" if all_valid 
+            "message": ("Settings are properly loaded and accessible" if all_valid
                        else "Some settings are invalid or missing"),
             "validation_details": validation_details,
             "summary": {
                 "total_fields": 5,
                 "valid_fields": sum(1 for field in validation_details.values() if field["valid"]),
-                "missing_fields": [name for name, details in validation_details.items() 
+                "missing_fields": [name for name, details in validation_details.items()
                                  if not details["valid"]]
             }
         }

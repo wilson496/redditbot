@@ -77,7 +77,7 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
             pass
     if os.getenv("REDDIT_SUBREDDITS"):
         defaults["reddit"]["subreddits"] = [
-            s.strip() for s in os.getenv("REDDIT_SUBREDDITS", "").split(",") 
+            s.strip() for s in os.getenv("REDDIT_SUBREDDITS", "").split(",")
             if s.strip()
         ]
 
@@ -103,7 +103,9 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
     return Settings.model_validate(defaults)
 
 
-def validate_settings(path: Union[str, os.PathLike, None] = None) -> tuple[bool, str, Union[Settings, None]]:
+def validate_settings(
+    path: Union[str, os.PathLike, None] = None
+) -> tuple[bool, str, Union[Settings, None]]:
     """
     Validate settings without raising exceptions.
 
