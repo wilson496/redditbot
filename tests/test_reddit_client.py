@@ -63,4 +63,4 @@ def test_fetch_posts_monkeypatch(monkeypatch):
     data = fetch_posts(fake_settings)
     assert set(data.keys()) == {"a", "b"}
     assert len(data["a"]) == 2
-    assert all("title" in p and "score" in p for p in data["a"]) 
+    assert all("title" in p and "score" in p for p in data["a"])

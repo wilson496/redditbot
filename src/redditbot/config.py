@@ -47,7 +47,8 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
         cfg = load_config()
     except FileNotFoundError:
         cfg = {}
-        print(f"⚠️  Config file not found at {_default_config_path()}, using environment variables only")
+        print(f"⚠️  Config file not found at {_default_config_path()}, "
+              f"using environment variables only")
     except (yaml.YAMLError, OSError) as e:
         cfg = {}
         print(f"⚠️  Error loading config file: {e}, using environment variables only")
@@ -76,7 +77,8 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
             pass
     if os.getenv("REDDIT_SUBREDDITS"):
         defaults["reddit"]["subreddits"] = [
-            s.strip() for s in os.getenv("REDDIT_SUBREDDITS", "").split(",") if s.strip()
+            s.strip() for s in os.getenv("REDDIT_SUBREDDITS", "").split(",") 
+            if s.strip()
         ]
 
     # Pre-validation checks for missing required values

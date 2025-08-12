@@ -113,7 +113,8 @@ def validate_settings() -> Dict[str, Any]:
             "user_agent": {
                 "configured": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip()),
                 "value": (settings.reddit.user_agent[:50] + "..." 
-                         if len(settings.reddit.user_agent) > 50 else settings.reddit.user_agent),
+                         if len(settings.reddit.user_agent) > 50 
+                         else settings.reddit.user_agent),
                 "valid": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip())
             },
             "fetch_limit": {
