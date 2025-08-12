@@ -1,8 +1,12 @@
-import os
+"""
+Tests for environment variable precedence over YAML configuration.
+"""
+
 from redditbot.config import load_settings
 
 
 def test_yaml_defaults_used_when_no_env(monkeypatch):
+    """Test that YAML defaults are used when no environment variables are set."""
     # Ensure env is clean
     for key in [
         "REDDIT_CLIENT_ID",
@@ -37,6 +41,7 @@ def test_yaml_defaults_used_when_no_env(monkeypatch):
 
 
 def test_env_overrides_yaml(monkeypatch):
+    """Test that environment variables override YAML configuration."""
     # Provide YAML defaults
     yaml_cfg = {
         "reddit": {
