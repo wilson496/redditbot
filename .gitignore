@@ -23,3 +23,12 @@ dist/
 # Editor/IDE
 .vscode/
 .idea/
+
+# VSCode
+.vscode/
+
+# Cursor
+.cursor/
+
+# Cursor
+.cursor/

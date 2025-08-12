@@ -2,9 +2,10 @@
 Tests for the Reddit client functionality.
 """
 
+from pydantic import SecretStr
+
 from redditbot.reddit_client import fetch_posts
 from redditbot.settings import Settings, RedditSettings, FetchSettings
-from pydantic import SecretStr
 
 
 class DummySubreddit:
@@ -43,7 +44,7 @@ def test_fetch_posts_monkeypatch(monkeypatch):
     dummy_reddit = DummyReddit()
 
     # Monkeypatch get_reddit_instance to return our dummy
-    def mock_get_reddit_instance(settings):
+    def mock_get_reddit_instance(_):
         return dummy_reddit
 
     monkeypatch.setattr("redditbot.reddit_client.get_reddit_instance", mock_get_reddit_instance)

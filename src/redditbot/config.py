@@ -48,7 +48,7 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
     except FileNotFoundError:
         cfg = {}
         print(f"⚠️  Config file not found at {_default_config_path()}, using environment variables only")
-    except Exception as e:
+    except (yaml.YAMLError, OSError) as e:
         cfg = {}
         print(f"⚠️  Error loading config file: {e}, using environment variables only")
 
@@ -111,5 +111,5 @@ def validate_settings(path: Union[str, os.PathLike, None] = None) -> tuple[bool,
     try:
         settings = load_settings(path)
         return True, "Settings are valid", settings
-    except Exception as e:
+    except (ValueError, RuntimeError, OSError) as e:
         return False, f"Settings validation failed: {str(e)}", None

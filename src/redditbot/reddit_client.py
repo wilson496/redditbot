@@ -2,8 +2,9 @@
 Reddit API client for fetching posts from subreddits.
 """
 
-import praw
 from typing import Union
+
+import praw
 
 from .config import load_settings
 from .settings import Settings

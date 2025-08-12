@@ -17,14 +17,14 @@ from .settings import Settings
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(fastapi_app: FastAPI):
     """Manage application lifecycle and validate settings on startup."""
-    app.state.start_time = datetime.now(timezone.utc)
+    fastapi_app.state.start_time = datetime.now(timezone.utc)
 
     # Validate settings before starting the app
     try:
         settings = load_settings()
-        app.state.settings = settings
+        fastapi_app.state.settings = settings
         print("✅ Settings loaded successfully")
         print(f"   - Reddit client configured for {len(settings.reddit.subreddits)} subreddits")
         print(f"   - Fetch limit: {settings.reddit.fetch.limit}")
@@ -144,7 +144,7 @@ def validate_settings() -> Dict[str, Any]:
                                  if not details["valid"]]
             }
         }
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         return {
             "status": "error",
             "message": f"Settings validation failed: {str(e)}",
