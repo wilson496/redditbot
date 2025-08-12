@@ -28,6 +28,14 @@ class DummySubreddit:
                 self.num_comments = i
         return [Post(self.name, i) for i in range(1, limit + 1)]
 
+    def new(self, limit=5):
+        """Return mock new posts."""
+        return self.hot(limit)
+
+    def get_name(self):
+        """Get the subreddit name."""
+        return self.name
+
 
 class DummyReddit:
     """Mock Reddit instance for testing purposes."""
@@ -36,6 +44,10 @@ class DummyReddit:
         s = DummySubreddit(name)
         s.name = name
         return s
+
+    def get_instance_info(self):
+        """Get mock instance information."""
+        return {"type": "dummy", "authenticated": False}
 
 
 def test_fetch_posts_monkeypatch(monkeypatch):
