@@ -1,4 +1,8 @@
-# requirements file
-requests
+fastapi
+uvicorn
+praw
+pyyaml
+python-dotenv
 pytest
-virtualenvwrapper
+pydantic-settings
+pydantic
