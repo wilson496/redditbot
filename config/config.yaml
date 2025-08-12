@@ -1,0 +1,11 @@
+
+reddit:
+  client_id: "your-client-id"
+  client_secret: "your-client-secret"
+  user_agent: "redditbot:v1.0 (by u/yourusername)"
+  subreddits:
+    - devops
+    - kubernetes
+    - python
+fetch:
+  limit: 10
