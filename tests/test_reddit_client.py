@@ -1,17 +1,23 @@
+"""
+Tests for the Reddit client functionality.
+"""
 
-import types
 from redditbot.reddit_client import fetch_posts
 from redditbot.settings import Settings, RedditSettings, FetchSettings
 from pydantic import SecretStr
 
+
 class DummySubreddit:
-    def __init__(self, name): 
+    """Mock subreddit for testing purposes."""
+    def __init__(self, name):
         self.name = name
-    
+
     def hot(self, limit=5):
+        """Return mock hot posts."""
         # Minimal stub posts
         class Post:
-            def __init__(self, subreddit_name, i): 
+            """Mock post for testing purposes."""
+            def __init__(self, subreddit_name, i):
                 self.id = f"{subreddit_name}_{i}"
                 self.title = f"Post {i} in {subreddit_name}"
                 self.score = i * 10
@@ -21,20 +27,25 @@ class DummySubreddit:
                 self.num_comments = i
         return [Post(self.name, i) for i in range(1, limit + 1)]
 
+
 class DummyReddit:
-    def subreddit(self, name): 
+    """Mock Reddit instance for testing purposes."""
+    def subreddit(self, name):
+        """Return a mock subreddit."""
         s = DummySubreddit(name)
         s.name = name
         return s
 
-def test_fetch_posts_monkeypatch(monkeypatch, tmp_path):
+
+def test_fetch_posts_monkeypatch(monkeypatch):
+    """Test that fetch_posts works with mocked Reddit instance."""
     # Create a dummy reddit instance
     dummy_reddit = DummyReddit()
-    
+
     # Monkeypatch get_reddit_instance to return our dummy
     def mock_get_reddit_instance(settings):
         return dummy_reddit
-    
+
     monkeypatch.setattr("redditbot.reddit_client.get_reddit_instance", mock_get_reddit_instance)
 
     # Create fake settings

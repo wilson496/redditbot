@@ -1,27 +1,43 @@
+"""
+Configuration management for RedditBot.
+"""
 
-from pathlib import Path
-import yaml
 import os
+from pathlib import Path
+from typing import Union
+
 import dotenv
-from redditbot.settings import Settings
+import yaml
+
+from .settings import Settings
+
 
 def _default_config_path() -> Path:
+    """Get the default path for the configuration file."""
     # src/redditbot/config.py -> repo root is parents[2]
     return Path(__file__).resolve().parents[2] / "config" / "config.yaml"
 
+
 def _default_env_path() -> Path:
+    """Get the default path for the environment file."""
     return Path(__file__).resolve().parents[2] / ".env"
 
-def load_config(path: str | os.PathLike | None = None) -> dict:
+
+def load_config(path: Union[str, os.PathLike, None] = None) -> dict:
+    """Load configuration from YAML file."""
     cfg_path = Path(path) if path else _default_config_path()
     with cfg_path.open("r") as f:
         return yaml.safe_load(f)
 
-def load_env(path: str | os.PathLike | None = None) -> dict:
+
+def load_env(path: Union[str, os.PathLike, None] = None) -> dict:
+    """Load environment variables from .env file."""
     env_path = Path(path) if path else _default_env_path()
     return dotenv.load_dotenv(env_path)
 
-def load_settings(path: str | os.PathLike | None = None) -> Settings:
+
+def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
+    """Load and validate application settings from config files and environment."""
     # Load .env into environment first
     env_path = Path(path) if path else _default_env_path()
     load_env(env_path)
@@ -65,7 +81,7 @@ def load_settings(path: str | os.PathLike | None = None) -> Settings:
 
     # Pre-validation checks for missing required values
     missing_fields = []
-    
+
     if not defaults["reddit"]["client_id"] or defaults["reddit"]["client_id"] is None:
         missing_fields.append("REDDIT_CLIENT_ID")
     if not defaults["reddit"]["client_secret"] or defaults["reddit"]["client_secret"] is None:
@@ -74,7 +90,7 @@ def load_settings(path: str | os.PathLike | None = None) -> Settings:
         missing_fields.append("REDDIT_USER_AGENT")
     if not defaults["reddit"]["subreddits"] or defaults["reddit"]["subreddits"] is None:
         missing_fields.append("REDDIT_SUBREDDITS")
-    
+
     if missing_fields:
         raise ValueError(
             f"Missing required settings: {', '.join(missing_fields)}. "
@@ -84,10 +100,11 @@ def load_settings(path: str | os.PathLike | None = None) -> Settings:
     # Validate and return settings
     return Settings.model_validate(defaults)
 
-def validate_settings(path: str | os.PathLike | None = None) -> tuple[bool, str, Settings | None]:
+
+def validate_settings(path: Union[str, os.PathLike, None] = None) -> tuple[bool, str, Union[Settings, None]]:
     """
     Validate settings without raising exceptions.
-    
+
     Returns:
         tuple: (is_valid, message, settings_or_none)
     """

@@ -1,10 +1,16 @@
+"""
+Reddit API client for fetching posts from subreddits.
+"""
 
-import os
 import praw
-from redditbot.config import load_settings
-from redditbot.settings import Settings
+from typing import Union
+
+from .config import load_settings
+from .settings import Settings
+
 
 def get_reddit_instance(settings: Settings):
+    """Create and return a Reddit API instance."""
     reddit = praw.Reddit(
         client_id=settings.reddit.client_id,
         client_secret=settings.reddit.client_secret.get_secret_value(),
@@ -12,7 +18,9 @@ def get_reddit_instance(settings: Settings):
     )
     return reddit
 
-def fetch_posts(settings: Settings, limit: int | None = None) -> dict:
+
+def fetch_posts(settings: Settings, limit: Union[int, None] = None) -> dict:
+    """Fetch posts from configured subreddits."""
     reddit = get_reddit_instance(settings)
     fetch_limit = limit or settings.reddit.fetch.limit
     results: dict[str, list[dict]] = {}
@@ -33,8 +41,8 @@ def fetch_posts(settings: Settings, limit: int | None = None) -> dict:
         results[sub] = posts
     return results
 
-# Keep backward compatibility for external usage
-def fetch_posts_with_defaults(limit: int | None = None) -> dict:
-    """Legacy function that loads settings internally - use fetch_posts(settings, limit) for better performance"""
+
+def fetch_posts_with_defaults(limit: Union[int, None] = None) -> dict:
+    """Legacy function that loads settings internally - use fetch_posts(settings, limit) for better performance."""
     settings = load_settings()
     return fetch_posts(settings, limit)
