@@ -8,6 +8,26 @@ from redditbot.reddit_client import fetch_posts
 from redditbot.settings import Settings, RedditSettings, FetchSettings
 
 
+class DummyPost:
+    """Mock post for testing purposes."""
+    def __init__(self, subreddit_name, i):
+        self.id = f"{subreddit_name}_{i}"
+        self.title = f"Post {i} in {subreddit_name}"
+        self.score = i * 10
+        self.url = f"https://example.com/{subreddit_name}/{i}"
+        self.permalink = f"/r/{subreddit_name}/comments/{subreddit_name}_{i}/"
+        self.created_utc = 0
+        self.num_comments = i
+
+    def get_title(self):
+        """Get the post title."""
+        return self.title
+
+    def get_score(self):
+        """Get the post score."""
+        return self.score
+
+
 class DummySubreddit:
     """Mock subreddit for testing purposes."""
     def __init__(self, name):
@@ -15,18 +35,7 @@ class DummySubreddit:
 
     def hot(self, limit=5):
         """Return mock hot posts."""
-        # Minimal stub posts
-        class Post:
-            """Mock post for testing purposes."""
-            def __init__(self, subreddit_name, i):
-                self.id = f"{subreddit_name}_{i}"
-                self.title = f"Post {i} in {subreddit_name}"
-                self.score = i * 10
-                self.url = f"https://example.com/{subreddit_name}/{i}"
-                self.permalink = f"/r/{subreddit_name}/comments/{subreddit_name}_{i}/"
-                self.created_utc = 0
-                self.num_comments = i
-        return [Post(self.name, i) for i in range(1, limit + 1)]
+        return [DummyPost(self.name, i) for i in range(1, limit + 1)]
 
     def new(self, limit=5):
         """Return mock new posts."""
