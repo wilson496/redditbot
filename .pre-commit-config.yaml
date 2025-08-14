@@ -70,7 +70,7 @@ repos:
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, css, scss, html, yaml, yml, markdown]
+        types_or: [javascript, jsx, ts, tsx, json, css, scss, html, yaml, markdown]
 
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v3.20.0
