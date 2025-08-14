@@ -20,13 +20,12 @@ jobs:
           auto-update-conda: true
           channels: conda-forge
           activate-environment: redditbot
-          use-mamba: true
 
       - name: Create env for ${{ matrix.python-version }}
         shell: bash -l {0}
         run: |
-          mamba env remove -n redditbot || true
-          mamba create -n redditbot -y python=${{ matrix.python-version }} pip
+          conda env remove -n redditbot || true
+          conda create -n redditbot -y python=${{ matrix.python-version }} pip
           conda activate redditbot
           python -V
           pip -V
@@ -60,13 +59,12 @@ jobs:
           auto-update-conda: true
           channels: conda-forge
           activate-environment: redditbot
-          use-mamba: true
 
       - name: Create env for ${{ matrix.python-version }}
         shell: bash -l {0}
         run: |
-          mamba env remove -n redditbot || true
-          mamba create -n redditbot -y python=${{ matrix.python-version }} pip
+          conda env remove -n redditbot || true
+          conda create -n redditbot -y python=${{ matrix.python-version }} pip
           conda activate redditbot
           python -V
 
