@@ -1,0 +1,42 @@
+[MASTER]
+ignore=venv,.venv,build,dist
+init-hook='import sys; sys.path.append("src")'
+
+[MESSAGES CONTROL]
+disable=
+    C0114,
+    C0115,
+    C0116,
+    R0903,
+    W1203,
+
+[TYPECHECK]
+ignored-modules=dotenv,yaml
+generated-members=pandas.*,pytest.*
+
+[BASIC]
+good-names=i,j,k,ex,_,df,dt,ts,tz,id,pk,fp
+
+[DESIGN]
+max-args=7
+max-locals=20
+max-branches=14
+max-statements=60
+max-returns=8
+
+[FORMAT]
+max-line-length=100
+
+[REPORTS]
+score=yes
+
+[MAIN]
+per-file-ignores =
+    tests/*: 
+        C0114,
+        C0115,
+        C0116,
+        R0903,
+        W0212,
+        W0621,
+        W0613
