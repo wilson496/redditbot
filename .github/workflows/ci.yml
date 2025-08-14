@@ -1,4 +1,15 @@
-name: CI (Lint & Tests, Matrix + Coverage)
+# Comprehensive CI/CD Workflow for Reddit Bot
+# This workflow consolidates all code quality checks, testing, and coverage reporting
+# into a single matrix job that runs against multiple Python versions.
+#
+# What it does:
+# 1. Pre-commit hooks: Code formatting, linting, security checks
+# 2. Pylint: Advanced Python linting and code analysis
+# 3. Pytest: Unit testing with coverage reporting
+# 4. Matrix testing: Ensures compatibility across Python 3.10, 3.11, 3.12
+# 5. Coverage upload: Reports test coverage to Codecov (from Python 3.10 run)
+
+name: CI (Comprehensive Code Quality & Testing)
 
 on:
   push:
@@ -6,7 +17,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-test:
+  code-quality-and-testing:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -37,6 +48,12 @@ jobs:
           pip install -e .
           pip install -r requirements.txt
           pip install black flake8 mypy isort bandit pyupgrade commitizen types-requests types-redis pytest pytest-cov pytest-asyncio
+
+      - name: Run pre-commit hooks
+        shell: bash -l {0}
+        run: |
+          conda activate redditbot
+          pre-commit run --all-files
 
       - name: Run pylint
         shell: bash -l {0}
