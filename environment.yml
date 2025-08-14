@@ -26,3 +26,4 @@ dependencies:
       - commitizen
       - types-requests
       - types-redis
+      - types-PyYAML

@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint:
+  lint-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -36,45 +36,13 @@ jobs:
           conda activate redditbot
           pip install -e .
           pip install -r requirements.txt
-          pip install black flake8 mypy isort bandit pyupgrade commitizen types-requests types-redis
+          pip install black flake8 mypy isort bandit pyupgrade commitizen types-requests types-redis pytest pytest-cov pytest-asyncio
 
       - name: Run pylint
         shell: bash -l {0}
         run: |
           conda activate redditbot
           pylint $(git ls-files '*.py')
-
-  tests:
-    runs-on: ubuntu-latest
-    needs: lint
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Miniconda
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          channels: conda-forge
-          activate-environment: redditbot
-
-      - name: Create env for ${{ matrix.python-version }}
-        shell: bash -l {0}
-        run: |
-          conda env remove -n redditbot || true
-          conda create -n redditbot -y python=${{ matrix.python-version }} pip
-          conda activate redditbot
-          python -V
-
-      - name: Install dependencies
-        shell: bash -l {0}
-        run: |
-          conda activate redditbot
-          pip install -e .
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio
 
       - name: Run pytest with coverage (XML for Codecov)
         shell: bash -l {0}
@@ -83,6 +51,7 @@ jobs:
           pytest --maxfail=1 --disable-warnings --cov=src --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.10'
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml

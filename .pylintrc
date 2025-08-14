@@ -31,12 +31,5 @@ max-line-length=100
 score=yes
 
 [MAIN]
-per-file-ignores =
-    tests/*: 
-        C0114,
-        C0115,
-        C0116,
-        R0903,
-        W0212,
-        W0621,
-        W0613
+# per-file-ignores is not a valid pylint option
+# Use disable instead for global settings
