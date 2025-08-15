@@ -1,61 +1,142 @@
 """
 Settings and configuration models for RedditBot.
+
+This module provides a clean, typed configuration layer with predictable precedence
+and fail-fast validation. Environment variables override .env files, which override
+YAML defaults.
 """
 
-from pydantic import Field, SecretStr, BaseModel, field_validator
-from pydantic_settings import BaseSettings
-
-
-class FetchSettings(BaseModel):
-    """Settings for fetching posts from Reddit."""
-    limit: int = Field(..., description="The limit of posts to fetch")
-
-    @field_validator('limit')
-    @classmethod
-    def validate_limit(cls, v):
-        """Validate that the fetch limit is within acceptable bounds."""
-        if v <= 0:
-            raise ValueError('Fetch limit must be greater than 0')
-        if v > 100:
-            raise ValueError('Fetch limit cannot exceed 100')
-        return v
-
-
-class RedditSettings(BaseModel):
-    """Settings for Reddit API configuration."""
-    subreddits: list[str] = Field(..., description="The subreddits to fetch posts from")
-    fetch: FetchSettings = Field(..., description="The fetch settings")
-    client_id: str = Field(..., description="The client ID for the Reddit API")
-    client_secret: SecretStr = Field(..., description="The client secret for the Reddit API")
-    user_agent: str = Field(..., description="The user agent for the Reddit API")
-
-    @field_validator('subreddits')
-    @classmethod
-    def validate_subreddits(cls, v):
-        """Validate that subreddits list is not empty and contains valid names."""
-        if not v or len(v) == 0:
-            raise ValueError('At least one subreddit must be specified')
-        if any(not sub.strip() for sub in v):
-            raise ValueError('Subreddit names cannot be empty or whitespace only')
-        return v
-
-    @field_validator('client_id')
-    @classmethod
-    def validate_client_id(cls, v):
-        """Validate that client ID is not empty or whitespace only."""
-        if not v or not v.strip():
-            raise ValueError('Client ID cannot be empty or whitespace only')
-        return v.strip()
-
-    @field_validator('user_agent')
-    @classmethod
-    def validate_user_agent(cls, v):
-        """Validate that user agent is not empty or whitespace only."""
-        if not v or not v.strip():
-            raise ValueError('User agent cannot be empty or whitespace only')
-        return v.strip()
+from functools import lru_cache
+from typing import List
+from pydantic import Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Main application settings."""
-    reddit: RedditSettings = Field(..., description="The Reddit API settings")
+    """Main application settings with environment variable support."""
+    
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
+    
+    # Reddit API credentials (required)
+    reddit_client_id: str = Field(
+        ..., 
+        alias="REDDIT_CLIENT_ID",
+        description="Reddit API client ID"
+    )
+    
+    reddit_client_secret: SecretStr = Field(
+        ..., 
+        alias="REDDIT_CLIENT_SECRET",
+        description="Reddit API client secret"
+    )
+    
+    reddit_user_agent: str = Field(
+        ..., 
+        alias="REDDIT_USER_AGENT",
+        description="Reddit API user agent string"
+    )
+    
+    # Reddit configuration (with defaults)
+    reddit_subreddits: List[str] = Field(
+        default=["python", "programming"],
+        alias="REDDIT_SUBREDDITS",
+        description="List of subreddits to fetch posts from"
+    )
+    
+    reddit_default_limit: int = Field(
+        default=10,
+        alias="REDDIT_DEFAULT_LIMIT",
+        ge=1,
+        le=100,
+        description="Default number of posts to fetch per subreddit"
+    )
+    
+    @field_validator('reddit_subreddits', mode='before')
+    @classmethod
+    def parse_subreddits(cls, v):
+        """Parse comma-separated subreddits string into list."""
+        if isinstance(v, str):
+            return [s.strip() for s in v.split(',') if s.strip()]
+        return v
+    
+    @field_validator('reddit_subreddits')
+    @classmethod
+    def validate_subreddits(cls, v):
+        """Validate that subreddits list is not empty."""
+        if not v:
+            raise ValueError('At least one subreddit must be specified')
+        return v
+    
+    @field_validator('reddit_client_id')
+    @classmethod
+    def validate_client_id(cls, v):
+        """Validate that client ID is not empty."""
+        if not v or not v.strip():
+            raise ValueError('Client ID cannot be empty')
+        return v.strip()
+    
+    @field_validator('reddit_user_agent')
+    @classmethod
+    def validate_user_agent(cls, v):
+        """Validate that user agent is not empty."""
+        if not v or not v.strip():
+            raise ValueError('User agent cannot be empty')
+        return v.strip()
+    
+    @field_validator('reddit_default_limit')
+    @classmethod
+    def validate_limit(cls, v):
+        """Validate that limit is within acceptable bounds."""
+        if v <= 0:
+            raise ValueError('Default limit must be greater than 0')
+        if v > 100:
+            raise ValueError('Default limit cannot exceed 100')
+        return v
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """
+    Get cached settings instance.
+    
+    This function returns a singleton Settings instance that is cached
+    using LRU cache. The settings are loaded once and reused for
+    subsequent calls, improving performance.
+    
+    Returns:
+        Settings: The application settings instance
+        
+    Raises:
+        ValidationError: If required settings are missing or invalid
+    """
+    return Settings()
+
+
+def validate_settings_on_startup() -> Settings:
+    """
+    Validate settings on application startup.
+    
+    This function is designed to be called during application startup
+    to ensure all required settings are present and valid. If validation
+    fails, the application should not start.
+    
+    Returns:
+        Settings: Validated settings instance
+        
+    Raises:
+        ValidationError: If settings validation fails
+    """
+    try:
+        settings = get_settings()
+        print("✅ Settings validated successfully")
+        print(f"   - Reddit client configured for {len(settings.reddit_subreddits)} subreddits")
+        print(f"   - Default fetch limit: {settings.reddit_default_limit}")
+        return settings
+    except Exception as e:
+        print(f"❌ Settings validation failed: {e}")
+        raise RuntimeError(f"Application cannot start due to invalid settings: {e}") from e

@@ -1,8 +1,6 @@
 fastapi
 uvicorn
 praw
-pyyaml
-python-dotenv
 pytest
 pytest-asyncio
 pytest-cov
@@ -19,4 +17,3 @@ pyupgrade
 commitizen
 types-requests
 types-redis
-types-PyYAML

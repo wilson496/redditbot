@@ -9,13 +9,11 @@ dependencies:
   - pytest-asyncio
   - pylint
   - pre-commit
-  - pyyaml
   - pip:
       - fastapi
       - pydantic>=2
       - pydantic-settings
       - praw
-      - python-dotenv
       - uvicorn
       - black
       - flake8
@@ -26,4 +24,3 @@ dependencies:
       - commitizen
       - types-requests
       - types-redis
-      - types-PyYAML
