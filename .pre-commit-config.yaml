@@ -1,3 +1,17 @@
+# Pre-commit Configuration for Reddit Bot
+# 
+# IMPORTANT: These hooks should be run LOCALLY before pushing code, NOT in CI.
+# 
+# Why? Reformatting tools (black, isort, pyupgrade) can't persist changes
+# in GitHub Actions runners, making them useless in CI. Run these locally
+# to ensure your code is properly formatted before pushing.
+#
+# Usage:
+# 1. Install pre-commit: pip install pre-commit
+# 2. Install hooks: pre-commit install
+# 3. Run manually: pre-commit run --all-files
+# 4. Or let them run automatically on commit
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

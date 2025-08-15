@@ -3,13 +3,16 @@
 # into a single matrix job that runs against multiple Python versions.
 #
 # What it does:
-# 1. Pre-commit hooks: Code formatting, linting, security checks
-# 2. Pylint: Advanced Python linting and code analysis
-# 3. Pytest: Unit testing with coverage reporting
-# 4. Matrix testing: Ensures compatibility across Python 3.10, 3.11, 3.12
-# 5. Coverage upload: Reports test coverage to Codecov (from Python 3.10 run)
+# 1. Pylint: Advanced Python linting and code analysis
+# 2. Pytest: Unit testing with coverage reporting
+# 3. Matrix testing: Ensures compatibility across Python 3.10, 3.11, 3.12
+# 4. Coverage upload: Reports test coverage to Codecov (from Python 3.10 run)
+#
+# Note: Reformatting tools (black, isort, pyupgrade) are NOT run in CI
+# because they can't persist changes in GitHub Actions. These should be
+# run locally as pre-commit hooks before pushing code.
 
-name: CI (Comprehensive Code Quality & Testing)
+name: CI (Code Quality & Testing)
 
 on:
   push:
@@ -47,13 +50,7 @@ jobs:
           conda activate redditbot
           pip install -e .
           pip install -r requirements.txt
-          pip install black flake8 mypy isort bandit pyupgrade commitizen types-requests types-redis pytest pytest-cov pytest-asyncio
-
-      - name: Run pre-commit hooks
-        shell: bash -l {0}
-        run: |
-          conda activate redditbot
-          pre-commit run --all-files
+          pip install pylint pytest pytest-cov pytest-asyncio
 
       - name: Run pylint
         shell: bash -l {0}
