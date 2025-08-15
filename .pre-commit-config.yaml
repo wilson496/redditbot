@@ -5,16 +5,20 @@ repos:
       - id: check-yaml
         files: \.(yaml|yml)$
       - id: end-of-file-fixer
+        exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
       - id: trailing-whitespace
+        exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: check-docstring-first
         files: \.py$
+        exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
       - id: check-json
         files: \.json$
       - id: debug-statements
         files: \.py$
+        exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
       - id: requirements-txt-fixer
         files: requirements\.txt$
 
@@ -24,7 +28,7 @@ repos:
       - id: black
         language_version: python3
         args: [--line-length=88, --target-version=py310]
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pycqa/isort
@@ -32,7 +36,7 @@ repos:
     hooks:
       - id: isort
         args: [--profile=black, --line-length=88]
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pycqa/flake8
@@ -40,7 +44,7 @@ repos:
     hooks:
       - id: flake8
         args: [--max-line-length=88, --extend-ignore=E203,W503]
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pycqa/pylint
@@ -48,7 +52,7 @@ repos:
     hooks:
       - id: pylint
         args: [--output-format=colorized, --disable=C0114,C0115,C0116]
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -57,7 +61,7 @@ repos:
       - id: mypy
         additional_dependencies: [types-requests, types-redis, types-PyYAML]
         args: [--ignore-missing-imports]
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pycqa/bandit
@@ -66,27 +70,28 @@ repos:
       - id: bandit
         args: [-r, src, -f, json, -o, bandit-report.json]
         exclude: tests/,venv/,env/
-        files: ^src/.*\.py$
+        types: [python]
+        exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.15.0
     hooks:
       - id: pyupgrade
         args: [--py310-plus]
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
       - id: python-check-blanket-noqa
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
       - id: python-check-blanket-type-ignore
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
       - id: python-use-type-annotations
-        files: \.py$
+        types: [python]
         exclude: ^(.pylintrc|.git/|.venv/|venv/|requirements.txt|environment.yml|docker-compose.yaml)
 
   - repo: https://github.com/pre-commit/mirrors-prettier
