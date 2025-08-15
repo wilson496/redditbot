@@ -17,14 +17,14 @@ from .settings import Settings
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(fastapi_app: FastAPI):
     """Manage application lifecycle and validate settings on startup."""
-    app.state.start_time = datetime.now(timezone.utc)
+    fastapi_app.state.start_time = datetime.now(timezone.utc)
 
     # Validate settings before starting the app
     try:
         settings = load_settings()
-        app.state.settings = settings
+        fastapi_app.state.settings = settings
         print("✅ Settings loaded successfully")
         print(f"   - Reddit client configured for {len(settings.reddit.subreddits)} subreddits")
         print(f"   - Fetch limit: {settings.reddit.fetch.limit}")
@@ -102,7 +102,7 @@ def validate_settings() -> Dict[str, Any]:
             },
             "client_id": {
                 "configured": bool(settings.reddit.client_id and settings.reddit.client_id.strip()),
-                "value": (settings.reddit.client_id[:8] + "..." 
+                "value": (settings.reddit.client_id[:8] + "..."
                          if settings.reddit.client_id else None),
                 "valid": bool(settings.reddit.client_id and settings.reddit.client_id.strip())
             },
@@ -111,9 +111,12 @@ def validate_settings() -> Dict[str, Any]:
                 "valid": bool(settings.reddit.client_secret)
             },
             "user_agent": {
-                "configured": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip()),
-                "value": (settings.reddit.user_agent[:50] + "..." 
-                         if len(settings.reddit.user_agent) > 50 else settings.reddit.user_agent),
+                "configured": bool(
+                    settings.reddit.user_agent and settings.reddit.user_agent.strip()
+                ),
+                "value": (settings.reddit.user_agent[:50] + "..."
+                         if len(settings.reddit.user_agent) > 50
+                         else settings.reddit.user_agent),
                 "valid": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip())
             },
             "fetch_limit": {
@@ -134,17 +137,17 @@ def validate_settings() -> Dict[str, Any]:
 
         return {
             "status": "valid" if all_valid else "invalid",
-            "message": ("Settings are properly loaded and accessible" if all_valid 
+            "message": ("Settings are properly loaded and accessible" if all_valid
                        else "Some settings are invalid or missing"),
             "validation_details": validation_details,
             "summary": {
                 "total_fields": 5,
                 "valid_fields": sum(1 for field in validation_details.values() if field["valid"]),
-                "missing_fields": [name for name, details in validation_details.items() 
+                "missing_fields": [name for name, details in validation_details.items()
                                  if not details["valid"]]
             }
         }
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         return {
             "status": "error",
             "message": f"Settings validation failed: {str(e)}",

@@ -1,37 +1,46 @@
+# CI Matrix + Coverage + Status Badges (Conda)
 
-# RedditBot
+This setup gives you:
+- Matrix CI on Python **3.10 / 3.11 / 3.12**
+- **pylint** + **pytest** with coverage
+- **Codecov** coverage upload & badge
+- **GitHub Actions** status badge
+- **pre-commit** hooks
+- `src/`-layout friendly config
 
-An intelligent Reddit monitoring and analytics bot.
+## Badges
 
-## Features
-- Fetch posts from multiple subreddits
-- Summarize top posts
-- REST API with FastAPI
-- Dockerized for easy deployment
-
-## Quickstart
-
-### 1) Create a Reddit app
-Go to https://www.reddit.com/prefs/apps and create a script app. Copy the client ID and secret.
-
-### 2) Configure credentials
-Copy `.env.example` to `.env` and fill in your values.
-You can also adjust subreddits and defaults in `config/config.yaml`.
-
-### 3) Run it
-```bash
-# Local
-pip install -r requirements.txt
-python src/main.py
-
-# Docker
-docker-compose up --build
+### CI Status (replace placeholders)
+```
+[![CI](https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>/actions/workflows/ci.yml)
 ```
 
-### 4) Try the API
-- `GET http://localhost:8000/posts?limit=5`
-- `GET http://localhost:8000/summary?limit=5`
+### Coverage (Codecov)
+```
+[![codecov](https://codecov.io/gh/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>/branch/main/graph/badge.svg)](https://codecov.io/gh/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>)
+```
+
+Place these near the top of your `README.md`.
+
+## Local usage
+```bash
+conda env create -f environment.yml
+conda activate redditbot
+
+pre-commit install
+pre-commit run -a
+
+# Lint
+pylint $(git ls-files '*.py')
+
+# Tests + coverage
+pytest --cov=src --cov-report=term-missing
+```
+
+## CI
+- `.github/workflows/ci.yml` runs **lint** and **tests** across the Python matrix and uploads coverage to Codecov.
+- For **private repos**, set `CODECOV_TOKEN` in GitHub → Settings → Secrets and variables → Actions.
 
 ## Notes
-- Read-only by default. No posting or voting is performed.
-- Safe to run locally without elevated permissions.
+- `.pylintrc` appends `src/` to `sys.path` and relaxes some rules for `tests/`.
+- `pytest.ini` sets `pythonpath = src` for clean imports.

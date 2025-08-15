@@ -1,25 +1,32 @@
+# Environments
+.venv/
+venv/
+.env
+.env.*
+.conda/
+conda-env/
 
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Virtual environments
-.venv/
-env/
-venv/
-
-# Distribution / packaging
-build/
-dist/
 *.egg-info/
+dist/
+build/
 
-# Environment variables
-.env
+# pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
-# Python cache
-*.pytest_cache/
+# mypy
+.mypy_cache/
 
-# Editor/IDE
+# VSCode / IDEs
 .vscode/
 .idea/
+
+# OS
+.DS_Store
+Thumbs.db

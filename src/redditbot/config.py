@@ -36,33 +36,8 @@ def load_env(path: Union[str, os.PathLike, None] = None) -> dict:
     return dotenv.load_dotenv(env_path)
 
 
-def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
-    """Load and validate application settings from config files and environment."""
-    # Load .env into environment first
-    env_path = Path(path) if path else _default_env_path()
-    load_env(env_path)
-
-    # Read YAML for non-secret defaults
-    try:
-        cfg = load_config()
-    except FileNotFoundError:
-        cfg = {}
-        print(f"⚠️  Config file not found at {_default_config_path()}, using environment variables only")
-    except Exception as e:
-        cfg = {}
-        print(f"⚠️  Error loading config file: {e}, using environment variables only")
-
-    defaults: dict = {
-        "reddit": {
-            "subreddits": cfg.get("reddit", {}).get("subreddits", []),
-            "fetch": {"limit": cfg.get("fetch", {}).get("limit", 10)},
-            "client_id": cfg.get("reddit", {}).get("client_id"),
-            "client_secret": cfg.get("reddit", {}).get("client_secret"),
-            "user_agent": cfg.get("reddit", {}).get("user_agent"),
-        }
-    }
-
-    # Override with env vars when present
+def _apply_environment_overrides(defaults: dict) -> None:
+    """Apply environment variable overrides to the defaults dictionary."""
     if os.getenv("REDDIT_CLIENT_ID"):
         defaults["reddit"]["client_id"] = os.getenv("REDDIT_CLIENT_ID")
     if os.getenv("REDDIT_CLIENT_SECRET"):
@@ -76,10 +51,13 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
             pass
     if os.getenv("REDDIT_SUBREDDITS"):
         defaults["reddit"]["subreddits"] = [
-            s.strip() for s in os.getenv("REDDIT_SUBREDDITS", "").split(",") if s.strip()
+            s.strip() for s in os.getenv("REDDIT_SUBREDDITS", "").split(",")
+            if s.strip()
         ]
 
-    # Pre-validation checks for missing required values
+
+def _validate_required_fields(defaults: dict) -> None:
+    """Validate that all required fields are present."""
     missing_fields = []
 
     if not defaults["reddit"]["client_id"] or defaults["reddit"]["client_id"] is None:
@@ -97,11 +75,48 @@ def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
             f"Please set these values in your config file or environment variables."
         )
 
+
+def load_settings(path: Union[str, os.PathLike, None] = None) -> Settings:
+    """Load and validate application settings from config files and environment."""
+    # Load .env into environment first
+    env_path = Path(path) if path else _default_env_path()
+    load_env(env_path)
+
+    # Read YAML for non-secret defaults
+    try:
+        cfg = load_config()
+    except FileNotFoundError:
+        cfg = {}
+        print(f"⚠️  Config file not found at {_default_config_path()}, "
+              f"using environment variables only")
+    except (yaml.YAMLError, OSError) as e:
+        cfg = {}
+        print(f"⚠️  Error loading config file: {e}, "
+              f"using environment variables only")
+
+    defaults: dict = {
+        "reddit": {
+            "subreddits": cfg.get("reddit", {}).get("subreddits", []),
+            "fetch": {"limit": cfg.get("fetch", {}).get("limit", 10)},
+            "client_id": cfg.get("reddit", {}).get("client_id"),
+            "client_secret": cfg.get("reddit", {}).get("client_secret"),
+            "user_agent": cfg.get("reddit", {}).get("user_agent"),
+        }
+    }
+
+    # Apply environment variable overrides
+    _apply_environment_overrides(defaults)
+
+    # Validate required fields
+    _validate_required_fields(defaults)
+
     # Validate and return settings
     return Settings.model_validate(defaults)
 
 
-def validate_settings(path: Union[str, os.PathLike, None] = None) -> tuple[bool, str, Union[Settings, None]]:
+def validate_settings(
+    path: Union[str, os.PathLike, None] = None
+) -> tuple[bool, str, Union[Settings, None]]:
     """
     Validate settings without raising exceptions.
 
@@ -111,5 +126,5 @@ def validate_settings(path: Union[str, os.PathLike, None] = None) -> tuple[bool,
     try:
         settings = load_settings(path)
         return True, "Settings are valid", settings
-    except Exception as e:
+    except (ValueError, RuntimeError, OSError) as e:
         return False, f"Settings validation failed: {str(e)}", None

@@ -2,8 +2,9 @@
 Reddit API client for fetching posts from subreddits.
 """
 
-import praw
 from typing import Union
+
+import praw
 
 from .config import load_settings
 from .settings import Settings
@@ -43,6 +44,6 @@ def fetch_posts(settings: Settings, limit: Union[int, None] = None) -> dict:
 
 
 def fetch_posts_with_defaults(limit: Union[int, None] = None) -> dict:
-    """Legacy function that loads settings internally - use fetch_posts(settings, limit) for better performance."""
+    """Legacy function that loads settings internally."""
     settings = load_settings()
     return fetch_posts(settings, limit)

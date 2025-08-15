@@ -70,6 +70,3 @@ def test_env_overrides_yaml(monkeypatch):
     assert s.reddit.user_agent == "env-agent"
     assert s.reddit.subreddits == ["learnpython", "python"]
     assert s.reddit.fetch.limit == 12
-
-
-

@@ -9,7 +9,9 @@ from redditbot.config import validate_settings, load_settings
 def test_no_environment_variables(monkeypatch):
     """Test validation with no environment variables set."""
     # Clear any existing env vars
-    for var in ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "REDDIT_USER_AGENT", "REDDIT_SUBREDDITS"]:
+    env_vars = ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET",
+                "REDDIT_USER_AGENT", "REDDIT_SUBREDDITS"]
+    for var in env_vars:
         monkeypatch.delenv(var, raising=False)
 
     # Mock config loading to return empty config
