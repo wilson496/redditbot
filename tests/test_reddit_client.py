@@ -1,6 +1,7 @@
 """
 Tests for the Reddit client functionality.
 """
+# pylint: disable=redefined-outer-name  # pytest fixtures
 
 from unittest.mock import Mock, patch
 import pytest
@@ -10,7 +11,7 @@ from redditbot.reddit_client import get_reddit_instance, fetch_posts
 
 
 @pytest.fixture
-def mock_settings():
+def settings_fixture():
     """Create mock settings for testing."""
     settings = Mock(spec=Settings)
     settings.reddit_client_id = "test_client_id"
@@ -23,7 +24,7 @@ def mock_settings():
 
 
 @pytest.fixture
-def mock_reddit():
+def reddit_fixture():
     """Create mock Reddit instance for testing."""
     reddit = Mock()
 
