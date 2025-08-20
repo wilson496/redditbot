@@ -1,72 +1,141 @@
 """
-Tests for environment variable precedence over YAML configuration.
+Tests for environment variable precedence in settings.
 """
 
-from redditbot.config import load_settings
+from unittest.mock import patch
+import pytest
+
+from redditbot.settings import Settings
 
 
-def test_yaml_defaults_used_when_no_env(monkeypatch):
-    """Test that YAML defaults are used when no environment variables are set."""
-    # Ensure env is clean
-    for key in [
-        "REDDIT_CLIENT_ID",
-        "REDDIT_CLIENT_SECRET",
-        "REDDIT_USER_AGENT",
-        "REDDIT_SUBREDDITS",
-        "FETCH_LIMIT",
-    ]:
-        monkeypatch.delenv(key, raising=False)
+def test_environment_variables_override_defaults():
+    """Test that environment variables override default values."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_SUBREDDITS': 'python,fastapi,django',
+        'REDDIT_DEFAULT_LIMIT': '25'
+    }):
+        settings = Settings()
 
-    # Avoid reading a real .env file
-    monkeypatch.setattr("redditbot.config.load_env", lambda *args, **kwargs: None)
-
-    # Provide YAML defaults
-    yaml_cfg = {
-        "reddit": {
-            "subreddits": ["devops", "python"],
-            "client_id": "yaml-client-id",
-            "client_secret": "yaml-secret",
-            "user_agent": "yaml-agent",
-        },
-        "fetch": {"limit": 7},
-    }
-    monkeypatch.setattr("redditbot.config.load_config", lambda *args, **kwargs: yaml_cfg)
-
-    s = load_settings()
-    assert s.reddit.subreddits == ["devops", "python"]
-    assert s.reddit.fetch.limit == 7
-    assert s.reddit.client_id == "yaml-client-id"
-    assert s.reddit.client_secret.get_secret_value() == "yaml-secret"
-    assert s.reddit.user_agent == "yaml-agent"
+        # Environment variables should override defaults
+        assert settings.reddit_client_id == 'env_client_id'
+        assert settings.reddit_client_secret.get_secret_value() == 'env_client_secret'  # pylint: disable=no-member
+        assert settings.reddit_user_agent == 'env_user_agent'
+        assert settings.reddit_subreddits == ['python', 'fastapi', 'django']
+        assert settings.reddit_default_limit == 25
 
 
-def test_env_overrides_yaml(monkeypatch):
-    """Test that environment variables override YAML configuration."""
-    # Provide YAML defaults
-    yaml_cfg = {
-        "reddit": {
-            "subreddits": ["devops", "python"],
-            "client_id": "yaml-client-id",
-            "client_secret": "yaml-secret",
-            "user_agent": "yaml-agent",
-        },
-        "fetch": {"limit": 7},
-    }
-    monkeypatch.setattr("redditbot.config.load_config", lambda *args, **kwargs: yaml_cfg)
+def test_default_values_when_env_vars_not_set():
+    """Test that default values are used when environment variables are not set."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent'
+        # REDDIT_SUBREDDITS and REDDIT_DEFAULT_LIMIT not set
+    }):
+        settings = Settings()
 
-    # Avoid reading a real .env file
-    monkeypatch.setattr("redditbot.config.load_env", lambda *args, **kwargs: None)
+        # Should use defaults for optional fields
+        assert settings.reddit_subreddits == ['python', 'programming']  # default
+        assert settings.reddit_default_limit == 10  # default
 
-    # Set env overrides
-    monkeypatch.setenv("REDDIT_CLIENT_ID", "env-client-id")
-    monkeypatch.setenv("REDDIT_CLIENT_SECRET", "env-secret")
-    monkeypatch.setenv("REDDIT_USER_AGENT", "env-agent")
-    monkeypatch.setenv("REDDIT_SUBREDDITS", "learnpython, python")
-    monkeypatch.setenv("FETCH_LIMIT", "12")
 
-    s = load_settings()
-    assert s.reddit.client_id == "env-client-id"
-    assert s.reddit.client_secret.get_secret_value() == "env-secret"
-    assert s.reddit.user_agent == "env-agent"
-    assert s.reddit.subreddits == ["learnpython", "python"]
-    assert s.reddit.fetch.limit == 12
+def test_comma_separated_subreddits_parsing():
+    """Test that comma-separated subreddits are properly parsed."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_SUBREDDITS': 'python, fastapi , django,  flask'  # with spaces
+    }):
+        settings = Settings()
+
+        # Should parse comma-separated values and strip whitespace
+        assert settings.reddit_subreddits == ['python', 'fastapi', 'django', 'flask']
+
+
+def test_single_subreddit_parsing():
+    """Test that single subreddit is properly handled."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_SUBREDDITS': 'python'  # single value
+    }):
+        settings = Settings()
+
+        # Should create list with single item
+        assert settings.reddit_subreddits == ['python']
+
+
+def test_empty_subreddits_handling():
+    """Test that empty subreddits string is handled properly."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_SUBREDDITS': ''  # empty string
+    }):
+        # Should raise validation error
+        with pytest.raises(ValueError) as exc_info:
+            Settings()
+
+        error_msg = str(exc_info.value)
+        assert 'At least one subreddit must be specified' in error_msg
+
+
+def test_limit_validation():
+    """Test that limit values are properly validated."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_DEFAULT_LIMIT': '50'  # valid value
+    }):
+        settings = Settings()
+        assert settings.reddit_default_limit == 50
+
+
+def test_limit_validation_out_of_range():
+    """Test that out-of-range limit values are rejected."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_DEFAULT_LIMIT': '150'  # too high
+    }):
+        with pytest.raises(ValueError) as exc_info:
+            Settings()
+
+        error_msg = str(exc_info.value)
+        assert 'less than or equal to 100' in error_msg
+
+
+def test_limit_validation_zero():
+    """Test that zero limit values are rejected."""
+    with patch.dict('os.environ', {
+        'REDDIT_CLIENT_ID': 'env_client_id',
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent',
+        'REDDIT_DEFAULT_LIMIT': '0'  # too low
+    }):
+        with pytest.raises(ValueError) as exc_info:
+            Settings()
+
+        error_msg = str(exc_info.value)
+        assert 'greater than or equal to 1' in error_msg
+
+
+def test_environment_variable_case_insensitivity():
+    """Test that environment variable names are case-insensitive."""
+    with patch.dict('os.environ', {
+        'reddit_client_id': 'lowercase_client_id',  # lowercase
+        'REDDIT_CLIENT_SECRET': 'env_client_secret',
+        'REDDIT_USER_AGENT': 'env_user_agent'
+    }):
+        settings = Settings()
+
+        # Should still work due to case-insensitive config
+        assert settings.reddit_client_id == 'lowercase_client_id'

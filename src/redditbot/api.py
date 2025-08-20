@@ -6,14 +6,13 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Dict, List, Any
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Depends
 from fastapi.responses import RedirectResponse
 
 from .analyzer import summarize_posts
-from .config import load_settings
 from .models import HealthCheckResponse, RedditPost
 from .reddit_client import fetch_posts
-from .settings import Settings
+from .settings import validate_settings_on_startup, Settings
 
 
 @asynccontextmanager
@@ -23,13 +22,11 @@ async def lifespan(fastapi_app: FastAPI):
 
     # Validate settings before starting the app
     try:
-        settings = load_settings()
+        settings = validate_settings_on_startup()
         fastapi_app.state.settings = settings
-        print("✅ Settings loaded successfully")
-        print(f"   - Reddit client configured for {len(settings.reddit.subreddits)} subreddits")
-        print(f"   - Fetch limit: {settings.reddit.fetch.limit}")
+        print("✅ Application started successfully")
     except Exception as e:
-        print(f"❌ Failed to load settings: {e}")
+        print(f"❌ Failed to start application: {e}")
         raise RuntimeError(f"Application cannot start due to invalid settings: {e}") from e
 
     yield
@@ -39,12 +36,20 @@ async def lifespan(fastapi_app: FastAPI):
 app = FastAPI(title="RedditBot API", lifespan=lifespan)
 
 
+def get_app_settings() -> Settings:
+    """Dependency function to get settings for routes."""
+    return app.state.settings
+
+
 @app.get("/posts", response_model=List[RedditPost])
-def get_posts(limit: int = Query(5, ge=1, le=100)) -> List[Dict]:
+def get_posts(
+    limit: int = Query(5, ge=1, le=100),
+    settings: Settings = Depends(get_app_settings)
+) -> List[RedditPost]:
     """Fetch Reddit posts from configured subreddits."""
-    settings = app.state.settings
     posts_by_subreddit = fetch_posts(settings, limit=limit)
     flat_posts: List[RedditPost] = []
+
     for posts in posts_by_subreddit.values():
         for p in posts:
             flat_posts.append(
@@ -55,13 +60,16 @@ def get_posts(limit: int = Query(5, ge=1, le=100)) -> List[Dict]:
                     permalink=p["permalink"],
                 )
             )
+
     return flat_posts
 
 
 @app.get("/summary")
-def get_summary(limit: int = Query(5, ge=1, le=100)) -> Dict[str, Any]:
+def get_summary(
+    limit: int = Query(5, ge=1, le=100),
+    settings: Settings = Depends(get_app_settings)
+) -> Dict[str, Any]:
     """Get a summary of Reddit posts from configured subreddits."""
-    settings = app.state.settings
     posts = fetch_posts(settings, limit=limit)
     summary = summarize_posts(posts)
     return summary
@@ -81,75 +89,49 @@ def health_check() -> HealthCheckResponse:
 
 
 @app.get("/settings", response_model=Settings)
-def get_settings() -> Settings:
+def get_current_settings(settings: Settings = Depends(get_app_settings)) -> Settings:
     """Get current application settings."""
-    return Settings()
+    return settings
 
 
 @app.get("/settings/validate")
-def validate_settings() -> Dict[str, Any]:
+def validate_current_settings(settings: Settings = Depends(get_app_settings)) -> Dict[str, Any]:
     """Validate that current settings are properly loaded and accessible."""
     try:
-        settings = app.state.settings
-
         # Detailed validation
         validation_details = {
             "subreddits": {
-                "configured": len(settings.reddit.subreddits) > 0,
-                "count": len(settings.reddit.subreddits),
-                "values": settings.reddit.subreddits,
-                "valid": all(sub.strip() for sub in settings.reddit.subreddits)
+                "configured": len(settings.reddit_subreddits) > 0,
+                "count": len(settings.reddit_subreddits),
+                "values": settings.reddit_subreddits,
             },
             "client_id": {
-                "configured": bool(settings.reddit.client_id and settings.reddit.client_id.strip()),
-                "value": (settings.reddit.client_id[:8] + "..."
-                         if settings.reddit.client_id else None),
-                "valid": bool(settings.reddit.client_id and settings.reddit.client_id.strip())
+                "configured": bool(settings.reddit_client_id),
+                "length": len(settings.reddit_client_id) if settings.reddit_client_id else 0,
             },
             "client_secret": {
-                "configured": bool(settings.reddit.client_secret),
-                "valid": bool(settings.reddit.client_secret)
+                "configured": bool(settings.reddit_client_secret),
+                "is_secret": True,
             },
             "user_agent": {
-                "configured": bool(
-                    settings.reddit.user_agent and settings.reddit.user_agent.strip()
-                ),
-                "value": (settings.reddit.user_agent[:50] + "..."
-                         if len(settings.reddit.user_agent) > 50
-                         else settings.reddit.user_agent),
-                "valid": bool(settings.reddit.user_agent and settings.reddit.user_agent.strip())
+                "configured": bool(settings.reddit_user_agent),
+                "value": settings.reddit_user_agent,
             },
-            "fetch_limit": {
+            "default_limit": {
                 "configured": True,
-                "value": settings.reddit.fetch.limit,
-                "valid": 0 < settings.reddit.fetch.limit <= 100
-            }
+                "value": settings.reddit_default_limit,
+                "in_range": 1 <= settings.reddit_default_limit <= 100,
+            },
         }
 
-        # Check if all required fields are valid
-        all_valid = all(
-            validation_details["subreddits"]["valid"],
-            validation_details["client_id"]["valid"],
-            validation_details["client_secret"]["valid"],
-            validation_details["user_agent"]["valid"],
-            validation_details["fetch_limit"]["valid"]
-        )
-
         return {
-            "status": "valid" if all_valid else "invalid",
-            "message": ("Settings are properly loaded and accessible" if all_valid
-                       else "Some settings are invalid or missing"),
-            "validation_details": validation_details,
-            "summary": {
-                "total_fields": 5,
-                "valid_fields": sum(1 for field in validation_details.values() if field["valid"]),
-                "missing_fields": [name for name, details in validation_details.items()
-                                 if not details["valid"]]
-            }
+            "valid": True,
+            "message": "Settings are valid and accessible",
+            "details": validation_details,
         }
-    except (ValueError, RuntimeError) as e:
+    except (ValueError, AttributeError, TypeError) as e:
         return {
-            "status": "error",
+            "valid": False,
             "message": f"Settings validation failed: {str(e)}",
-            "error": str(e)
+            "error": str(e),
         }

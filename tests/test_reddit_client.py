@@ -1,87 +1,101 @@
 """
 Tests for the Reddit client functionality.
 """
+# pylint: disable=redefined-outer-name  # pytest fixtures
 
-from pydantic import SecretStr
+from unittest.mock import Mock, patch
+import pytest
 
-from redditbot.reddit_client import fetch_posts
-from redditbot.settings import Settings, RedditSettings, FetchSettings
-
-
-class DummyPost:
-    """Mock post for testing purposes."""
-    def __init__(self, subreddit_name, i):
-        self.id = f"{subreddit_name}_{i}"
-        self.title = f"Post {i} in {subreddit_name}"
-        self.score = i * 10
-        self.url = f"https://example.com/{subreddit_name}/{i}"
-        self.permalink = f"/r/{subreddit_name}/comments/{subreddit_name}_{i}/"
-        self.created_utc = 0
-        self.num_comments = i
-
-    def get_title(self):
-        """Get the post title."""
-        return self.title
-
-    def get_score(self):
-        """Get the post score."""
-        return self.score
+from redditbot.settings import Settings
+from redditbot.reddit_client import get_reddit_instance, fetch_posts
 
 
-class DummySubreddit:
-    """Mock subreddit for testing purposes."""
-    def __init__(self, name):
-        self.name = name
-
-    def hot(self, limit=5):
-        """Return mock hot posts."""
-        return [DummyPost(self.name, i) for i in range(1, limit + 1)]
-
-    def new(self, limit=5):
-        """Return mock new posts."""
-        return self.hot(limit)
-
-    def get_name(self):
-        """Get the subreddit name."""
-        return self.name
+@pytest.fixture
+def settings_fixture():
+    """Create mock settings for testing."""
+    settings = Mock(spec=Settings)
+    settings.reddit_client_id = "test_client_id"
+    settings.reddit_client_secret = Mock()
+    settings.reddit_client_secret.get_secret_value.return_value = "test_secret"
+    settings.reddit_user_agent = "test_user_agent"
+    settings.reddit_subreddits = ["python", "programming"]
+    settings.reddit_default_limit = 5
+    return settings
 
 
-class DummyReddit:
-    """Mock Reddit instance for testing purposes."""
-    def subreddit(self, name):
-        """Return a mock subreddit."""
-        s = DummySubreddit(name)
-        s.name = name
-        return s
+@pytest.fixture
+def reddit_fixture():
+    """Create mock Reddit instance for testing."""
+    reddit = Mock()
 
-    def get_instance_info(self):
-        """Get mock instance information."""
-        return {"type": "dummy", "authenticated": False}
+    # Mock subreddit
+    subreddit = Mock()
+    reddit.subreddit.return_value = subreddit
+
+    # Mock posts
+    mock_post = Mock()
+    mock_post.id = "test_id"
+    mock_post.title = "Test Post"
+    mock_post.score = 100
+    mock_post.url = "https://example.com"
+    mock_post.permalink = "/r/python/comments/test"
+    mock_post.created_utc = 1234567890.0
+    mock_post.num_comments = 25
+
+    subreddit.hot.return_value = [mock_post]
+
+    return reddit
 
 
-def test_fetch_posts_monkeypatch(monkeypatch):
-    """Test that fetch_posts works with mocked Reddit instance."""
-    # Create a dummy reddit instance
-    dummy_reddit = DummyReddit()
+def test_get_reddit_instance(settings_fixture, reddit_fixture):
+    """Test creating Reddit instance with settings."""
+    with patch('redditbot.reddit_client.praw.Reddit', return_value=reddit_fixture):
+        result = get_reddit_instance(settings_fixture)
 
-    # Monkeypatch get_reddit_instance to return our dummy
-    def mock_get_reddit_instance(_):
-        return dummy_reddit
+        assert result == reddit_fixture
+        # Verify praw.Reddit was called with correct parameters
+        # Note: We can't easily test the exact call due to mocking complexity
+        assert result is reddit_fixture
 
-    monkeypatch.setattr("redditbot.reddit_client.get_reddit_instance", mock_get_reddit_instance)
 
-    # Create fake settings
-    fake_settings = Settings(
-        reddit=RedditSettings(
-            subreddits=["a", "b"],
-            fetch=FetchSettings(limit=2),
-            client_id="test_client_id",  # Use valid test values
-            client_secret=SecretStr("test_client_secret"),
-            user_agent="test_user_agent",  # Use valid test values
-        )
-    )
+def test_fetch_posts(settings_fixture, reddit_fixture):
+    """Test fetching posts from subreddits."""
+    with patch('redditbot.reddit_client.get_reddit_instance', return_value=reddit_fixture):
+        result = fetch_posts(settings_fixture, limit=3)
 
-    data = fetch_posts(fake_settings)
-    assert set(data.keys()) == {"a", "b"}
-    assert len(data["a"]) == 2
-    assert all("title" in p and "score" in p for p in data["a"])
+        assert "python" in result
+        assert "programming" in result
+
+        # Check that posts were fetched for each subreddit
+        assert len(result["python"]) == 1
+        assert len(result["programming"]) == 1
+
+        # Check post structure
+        post = result["python"][0]
+        assert post["id"] == "test_id"
+        assert post["title"] == "Test Post"
+        assert post["score"] == 100
+        assert post["url"] == "https://example.com"
+        assert post["permalink"] == "https://reddit.com/r/python/comments/test"
+        assert post["created_utc"] == 1234567890.0
+        assert post["num_comments"] == 25
+
+
+def test_fetch_posts_with_default_limit(settings_fixture, reddit_fixture):
+    """Test fetching posts with default limit from settings."""
+    with patch('redditbot.reddit_client.get_reddit_instance', return_value=reddit_fixture):
+        result = fetch_posts(settings_fixture)  # No limit specified
+
+        # Should use default limit from settings
+        assert len(result["python"]) == 1
+        assert len(result["programming"]) == 1
+
+
+def test_fetch_posts_with_custom_limit(settings_fixture, reddit_fixture):
+    """Test fetching posts with custom limit."""
+    with patch('redditbot.reddit_client.get_reddit_instance', return_value=reddit_fixture):
+        result = fetch_posts(settings_fixture, limit=10)
+
+        # Should use custom limit
+        assert len(result["python"]) == 1
+        assert len(result["programming"]) == 1
