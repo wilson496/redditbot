@@ -49,7 +49,7 @@ def get_posts(
     """Fetch Reddit posts from configured subreddits."""
     posts_by_subreddit = fetch_posts(settings, limit=limit)
     flat_posts: List[RedditPost] = []
-    
+
     for posts in posts_by_subreddit.values():
         for p in posts:
             flat_posts.append(
@@ -60,7 +60,7 @@ def get_posts(
                     permalink=p["permalink"],
                 )
             )
-    
+
     return flat_posts
 
 
@@ -129,7 +129,7 @@ def validate_current_settings(settings: Settings = Depends(get_app_settings)) ->
             "message": "Settings are valid and accessible",
             "details": validation_details,
         }
-    except Exception as e:
+    except (ValueError, AttributeError, TypeError) as e:
         return {
             "valid": False,
             "message": f"Settings validation failed: {str(e)}",

@@ -7,7 +7,7 @@ YAML defaults.
 """
 
 from functools import lru_cache
-from typing import List, Union
+from typing import List
 from pydantic import Field, SecretStr, field_validator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -63,8 +63,8 @@ class Settings(BaseSettings):
         """Parse comma-separated subreddits string into list."""
         if not self.reddit_subreddits_raw:
             return ["python", "programming"]  # fallback defaults
-        
-        subreddits = [s.strip() for s in self.reddit_subreddits_raw.split(",") if s.strip()]
+
+        subreddits = [s.strip() for s in str(self.reddit_subreddits_raw).split(",") if s.strip()]
         if not subreddits:
             raise ValueError("At least one subreddit must be specified")
         return subreddits

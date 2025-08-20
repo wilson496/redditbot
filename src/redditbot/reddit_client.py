@@ -2,7 +2,7 @@
 Reddit API client for fetching posts from subreddits.
 """
 
-from typing import Union
+
 
 import praw
 
