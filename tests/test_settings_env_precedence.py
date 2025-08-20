@@ -21,7 +21,7 @@ def test_environment_variables_override_defaults():
 
         # Environment variables should override defaults
         assert settings.reddit_client_id == 'env_client_id'
-        assert str(settings.reddit_client_secret) == 'env_client_secret'
+        assert settings.reddit_client_secret.get_secret_value() == 'env_client_secret'  # pylint: disable=no-member
         assert settings.reddit_user_agent == 'env_user_agent'
         assert settings.reddit_subreddits == ['python', 'fastapi', 'django']
         assert settings.reddit_default_limit == 25
@@ -110,7 +110,7 @@ def test_limit_validation_out_of_range():
             Settings()
 
         error_msg = str(exc_info.value)
-        assert 'cannot exceed 100' in error_msg
+        assert 'less than or equal to 100' in error_msg
 
 
 def test_limit_validation_zero():
@@ -125,7 +125,7 @@ def test_limit_validation_zero():
             Settings()
 
         error_msg = str(exc_info.value)
-        assert 'greater than 0' in error_msg
+        assert 'greater than or equal to 1' in error_msg
 
 
 def test_environment_variable_case_insensitivity():
