@@ -6,7 +6,7 @@ from typing import Union
 
 import praw
 
-from .settings import get_settings, Settings
+from .settings import Settings, get_settings
 
 
 def get_reddit_instance(settings: Settings):
@@ -19,12 +19,12 @@ def get_reddit_instance(settings: Settings):
     return reddit
 
 
-def fetch_posts(settings: Settings, limit: Union[int, None] = None) -> dict:
+def fetch_posts(settings: Settings, limit: int | None = None) -> dict:
     """Fetch posts from configured subreddits."""
     reddit = get_reddit_instance(settings)
     fetch_limit = limit or settings.reddit_default_limit
     results: dict[str, list[dict]] = {}
-    
+
     for sub in settings.reddit_subreddits:
         subreddit = reddit.subreddit(sub)
         posts = [
@@ -40,11 +40,11 @@ def fetch_posts(settings: Settings, limit: Union[int, None] = None) -> dict:
             for post in subreddit.hot(limit=fetch_limit)
         ]
         results[sub] = posts
-    
+
     return results
 
 
-def fetch_posts_with_defaults(limit: Union[int, None] = None) -> dict:
+def fetch_posts_with_defaults(limit: int | None = None) -> dict:
     """Fetch posts using the default settings."""
     settings = get_settings()
     return fetch_posts(settings, limit)

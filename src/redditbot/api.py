@@ -12,7 +12,7 @@ from fastapi.responses import RedirectResponse
 from .analyzer import summarize_posts
 from .models import HealthCheckResponse, RedditPost
 from .reddit_client import fetch_posts
-from .settings import get_settings, validate_settings_on_startup, Settings
+from .settings import validate_settings_on_startup, Settings
 
 
 @asynccontextmanager
@@ -45,7 +45,7 @@ def get_app_settings() -> Settings:
 def get_posts(
     limit: int = Query(5, ge=1, le=100),
     settings: Settings = Depends(get_app_settings)
-) -> List[Dict]:
+) -> List[RedditPost]:
     """Fetch Reddit posts from configured subreddits."""
     posts_by_subreddit = fetch_posts(settings, limit=limit)
     flat_posts: List[RedditPost] = []

@@ -6,10 +6,10 @@ Post analysis and summarization functionality.
 def summarize_posts(posts_by_subreddit: dict) -> dict:
     """
     Summarize posts by finding the top-scoring post from each subreddit.
-    
+
     Args:
         posts_by_subreddit: Dictionary mapping subreddit names to lists of posts
-        
+
     Returns:
         Dictionary mapping subreddit names to their top post summary
     """
